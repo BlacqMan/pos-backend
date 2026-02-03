@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api/axios";
 
 const Login = () => {
   const [mode, setMode] = useState("cashier");
@@ -18,36 +19,34 @@ const Login = () => {
     setError("");
 
     try {
-      const url =
+      const endpoint =
         mode === "admin"
-          ? "http://localhost:5000/api/auth/admin-login"
-          : "http://localhost:5000/api/auth/cashier-login";
+          ? "/auth/admin-login"
+          : "/auth/cashier-login";
 
-      const body =
+      const payload =
         mode === "admin"
           ? { email, password }
           : { pinCode };
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const res = await api.post(endpoint, payload);
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+      const { token, user } = res.data;
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
       // Redirect based on role
-      if (["admin", "super_admin"].includes(data.user.role)) {
+      if (["admin", "super_admin"].includes(user.role)) {
         navigate("/admin/dashboard");
-        } else {
-          navigate("/pos");
-        }
+      } else {
+        navigate("/pos");
+      }
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.response?.data?.message ||
+          "Invalid credentials"
+      );
     }
   };
 
