@@ -5,11 +5,11 @@ import api from "../api/axios";
 const Login = () => {
   const [mode, setMode] = useState("cashier");
 
-  // Admin state
+  // Admin
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Cashier state
+  // Cashier
   const [pinCode, setPinCode] = useState("");
 
   const [error, setError] = useState("");
@@ -36,7 +36,6 @@ const Login = () => {
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      // Redirect based on role
       if (["admin", "super_admin"].includes(user.role)) {
         navigate("/admin/dashboard");
       } else {
@@ -44,8 +43,7 @@ const Login = () => {
       }
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Invalid credentials"
+        err.response?.data?.message || "Login failed"
       );
     }
   };
@@ -57,7 +55,9 @@ const Login = () => {
           {mode === "admin" ? "Admin Login" : "Cashier Login"}
         </h2>
 
-        {error && <p className="text-red-500 mb-3">{error}</p>}
+        {error && (
+          <p className="text-red-500 mb-3">{error}</p>
+        )}
 
         {mode === "admin" ? (
           <>
@@ -73,7 +73,9 @@ const Login = () => {
               className="w-full p-2 bg-gray-700 rounded mb-3"
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
             />
           </>
         ) : (
@@ -83,7 +85,9 @@ const Login = () => {
             maxLength={4}
             type="password"
             value={pinCode}
-            onChange={(e) => setPinCode(e.target.value)}
+            onChange={(e) =>
+              setPinCode(e.target.value)
+            }
           />
         )}
 
@@ -97,10 +101,13 @@ const Login = () => {
         <p
           className="text-sm mt-4 text-center cursor-pointer text-blue-400"
           onClick={() =>
-            setMode(mode === "admin" ? "cashier" : "admin")
+            setMode(
+              mode === "admin" ? "cashier" : "admin"
+            )
           }
         >
-          Switch to {mode === "admin" ? "Cashier" : "Admin"} Login
+          Switch to{" "}
+          {mode === "admin" ? "Cashier" : "Admin"} Login
         </p>
       </div>
     </div>
