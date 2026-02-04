@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 const Login = () => {
+  const navigate = useNavigate();
+
   const [mode, setMode] = useState("cashier");
 
   // Admin
@@ -13,10 +15,13 @@ const Login = () => {
   const [pinCode, setPinCode] = useState("");
 
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const submitLogin = async () => {
+    if (loading) return;
+
     setError("");
+    setLoading(true);
 
     try {
       const endpoint =
@@ -33,18 +38,24 @@ const Login = () => {
 
       const { token, user } = res.data;
 
+      // Persist auth
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      if (["admin", "super_admin"].includes(user.role)) {
+      // Role-based redirect
+      if (user.role === "super_admin") {
+        navigate("/admin/dashboard");
+      } else if (user.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/pos");
       }
     } catch (err) {
       setError(
-        err.response?.data?.message || "Login failed"
+        err?.response?.data?.message || "Login failed"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,16 +67,20 @@ const Login = () => {
         </h2>
 
         {error && (
-          <p className="text-red-500 mb-3">{error}</p>
+          <p className="text-red-500 mb-3 text-center">
+            {error}
+          </p>
         )}
 
         {mode === "admin" ? (
           <>
             <input
+              type="email"
               className="w-full p-2 bg-gray-700 rounded mb-3"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
             />
 
             <input
@@ -73,33 +88,32 @@ const Login = () => {
               className="w-full p-2 bg-gray-700 rounded mb-3"
               placeholder="Password"
               value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </>
         ) : (
           <input
+            type="password"
             className="w-full p-2 bg-gray-700 rounded mb-3 text-center text-2xl tracking-widest"
             placeholder="••••"
             maxLength={4}
-            type="password"
             value={pinCode}
-            onChange={(e) =>
-              setPinCode(e.target.value)
-            }
+            onChange={(e) => setPinCode(e.target.value)}
+            inputMode="numeric"
           />
         )}
 
         <button
           onClick={submitLogin}
-          className="w-full bg-blue-600 p-2 rounded"
+          disabled={loading}
+          className="w-full bg-blue-600 p-2 rounded hover:bg-blue-700 transition disabled:opacity-60"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
 
         <p
-          className="text-sm mt-4 text-center cursor-pointer text-blue-400"
+          className="text-sm mt-4 text-center cursor-pointer text-blue-400 hover:underline"
           onClick={() =>
             setMode(
               mode === "admin" ? "cashier" : "admin"
