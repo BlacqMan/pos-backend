@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import Categories from "../components/Categories";
 import ProductGrid from "../components/ProductGrid";
-import api from "../../api/axios";
+import api from "../api/axios";
 
 /* ===============================
    RECEIPT COMPONENT
