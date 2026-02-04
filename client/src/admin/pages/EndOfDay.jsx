@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import api from "/src/api/axios";
+import api from "../../api/axios";
 
 const EndOfDay = () => {
   const [summary, setSummary] = useState(null);
@@ -19,12 +19,14 @@ const EndOfDay = () => {
      FETCH END-OF-DAY SUMMARY
   =============================== */
   useEffect(() => {
-    if (!isAuthenticated || !isSuperAdmin) {
-      setLoading(false);
-      return;
-    }
+    let isMounted = true;
 
-    const fetchSummary = async () => {
+    const loadSummary = async () => {
+      if (!isAuthenticated || !isSuperAdmin) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError("");
@@ -34,28 +36,24 @@ const EndOfDay = () => {
           params: date ? { date } : {},
         });
 
-        setSummary(res.data);
-      } catch (err) {
-        if (
-          err.response?.status === 401 ||
-          err.response?.status === 403
-        ) {
-          setError(
-            "You are not authorized to view this report."
-          );
-          setSummary(null);
-        } else {
-          setError(
-            err.response?.data?.message ||
-              "Failed to load end-of-day summary"
-          );
+        if (isMounted) {
+          setSummary(res.data);
         }
+      } catch {
+        if (!isMounted) return;
+
+        setSummary(null);
+        setError("Failed to load end-of-day summary");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchSummary();
+    loadSummary();
+
+    return () => {
+      isMounted = false;
+    };
   }, [isAuthenticated, isSuperAdmin, token, date]);
 
   /* ===============================

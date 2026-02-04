@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminPasswordModal from "../components/AdminPasswordModal";
-import api from "/src/api/axios";
-
+import api from "../../api/axios";
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
@@ -15,10 +14,12 @@ const Sales = () => {
   const token = localStorage.getItem("token");
 
   /* ===============================
-     FETCH SALES
+     FETCH SALES (ON MOUNT)
   =============================== */
   useEffect(() => {
-    const fetchSales = async () => {
+    let isMounted = true;
+
+    const loadSales = async () => {
       try {
         setError("");
 
@@ -26,16 +27,21 @@ const Sales = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        setSales(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            "Failed to load sales"
-        );
+        if (isMounted) {
+          setSales(Array.isArray(res.data) ? res.data : []);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Failed to load sales");
+        }
       }
     };
 
-    fetchSales();
+    loadSales();
+
+    return () => {
+      isMounted = false;
+    };
   }, [token]);
 
   /* ===============================
@@ -81,12 +87,10 @@ const Sales = () => {
       const res = await api.get("/admin/sales", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setSales(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          "Failed to void sale"
-      );
+    } catch {
+      alert("Failed to void sale");
     }
   };
 
@@ -99,6 +103,9 @@ const Sales = () => {
     setVoidReason("");
   };
 
+  /* ===============================
+     UI
+  =============================== */
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">
