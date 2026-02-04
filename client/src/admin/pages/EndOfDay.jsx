@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import api from "../../../api/axios";
+import api from "/src/api/axios";
 
 const EndOfDay = () => {
   const [summary, setSummary] = useState(null);
