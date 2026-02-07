@@ -1,36 +1,30 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+
+const generateBarcode = () => {
+  return Date.now().toString(); // simple & unique
+};
 
 const productSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true
-    },
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    quantity: { type: Number, required: true },
+
     barcode: {
       type: String,
-      unique: true
+      unique: true,
+      default: generateBarcode, // 👈 AUTO-GENERATE
     },
+
     category: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category'
+      ref: "Category",
+      required: true,
     },
-    price: {
-      type: Number,
-      required: true
-    },
-    costPrice: {
-      type: Number
-    },
-    quantity: {
-      type: Number,
-      default: 0
-    },
-    isActive: {
-      type: Boolean,
-      default: true
-    }
+
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Product', productSchema);
+module.exports = mongoose.model("Product", productSchema);

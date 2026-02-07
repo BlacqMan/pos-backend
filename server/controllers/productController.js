@@ -1,76 +1,172 @@
-const Product = require('../models/Product');
+const Product = require("../models/Product");
 
-// @desc   Create new product
-// @route  POST /api/products
-// @access Admin
+/* ===============================
+   HELPERS
+=============================== */
+const generateBarcode = () => {
+  // Simple unique barcode (timestamp + random)
+  return (
+    Date.now().toString() +
+    Math.floor(100 + Math.random() * 900).toString()
+  );
+};
+
+/* ===============================
+   CREATE PRODUCT
+=============================== */
 exports.createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
-    res.status(201).json(product);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    const {
+      name,
+      price,
+      quantity,
+      category,
+      barcode,
+      isActive = true,
+    } = req.body;
 
-// @desc   Get all products (optionally filtered by category)
-// @route  GET /api/products
-// @access Public
-exports.getProducts = async (req, res) => {
-  try {
-    const { category } = req.query; // Get category ID from query
-    let filter = {};
-
-    if (category) {
-      filter.category = category; // filter products by category
+    // ✅ Basic validation
+    if (!name || price == null || quantity == null || !category) {
+      return res.status(400).json({
+        message: "Name, price, quantity and category are required",
+      });
     }
 
-    const products = await Product.find(filter).populate('category');
+    const product = await Product.create({
+      name: name.trim(),
+      price: Number(price),
+      quantity: Number(quantity),
+      category,
+      isActive,
+      barcode: barcode || generateBarcode(), // ✅ auto-generate
+    });
+
+    const populatedProduct = await product.populate("category");
+
+    res.status(201).json(populatedProduct);
+  } catch (error) {
+    // ✅ Handle duplicate barcode nicely
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Duplicate barcode detected. Please try again.",
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to create product",
+    });
+  }
+};
+
+/* ===============================
+   GET PRODUCTS
+=============================== */
+exports.getProducts = async (req, res) => {
+  try {
+    const { category } = req.query;
+    const filter = {};
+
+    if (category) {
+      filter.category = category;
+    }
+
+    const products = await Product.find(filter)
+      .populate("category")
+      .sort({ createdAt: -1 });
+
     res.json(products);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: "Failed to load products",
+    });
   }
 };
 
-// @desc   Get single product by ID
-// @route  GET /api/products/:id
-// @access Public
+/* ===============================
+   GET PRODUCT BY ID
+=============================== */
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('category');
-    if (!product)
-      return res.status(404).json({ message: 'Product not found' });
+    const product = await Product.findById(req.params.id).populate("category");
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
 
     res.json(product);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: "Failed to fetch product",
+    });
   }
 };
 
-// @desc   Update product
-// @route  PUT /api/products/:id
-// @access Admin
+/* ===============================
+   UPDATE PRODUCT
+=============================== */
 exports.updateProduct = async (req, res) => {
   try {
+    const updateData = { ...req.body };
+
+    // Ensure numbers stay numbers
+    if (updateData.price != null) {
+      updateData.price = Number(updateData.price);
+    }
+
+    if (updateData.quantity != null) {
+      updateData.quantity = Number(updateData.quantity);
+    }
+
+    // If barcode is empty, remove it so it won't overwrite
+    if (updateData.barcode === "") {
+      delete updateData.barcode;
+    }
+
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true } // return the updated document
-    ).populate('category');
+      updateData,
+      { new: true, runValidators: true }
+    ).populate("category");
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
 
     res.json(product);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Duplicate barcode detected",
+      });
+    }
+
+    res.status(400).json({
+      message: "Failed to update product",
+    });
   }
 };
 
-// @desc   Delete product
-// @route  DELETE /api/products/:id
-// @access Admin
+/* ===============================
+   DELETE PRODUCT
+=============================== */
 exports.deleteProduct = async (req, res) => {
   try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Product removed' });
+    const product = await Product.findByIdAndDelete(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
+
+    res.json({ message: "Product removed" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: "Failed to delete product",
+    });
   }
 };
