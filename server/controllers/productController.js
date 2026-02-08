@@ -1,10 +1,10 @@
 const Product = require("../models/Product");
+const StockAudit = require("../models/StockAudit");
 
 /* ===============================
    HELPERS
 =============================== */
 const generateBarcode = () => {
-  // Simple unique barcode (timestamp + random)
   return (
     Date.now().toString() +
     Math.floor(100 + Math.random() * 900).toString()
@@ -25,7 +25,6 @@ exports.createProduct = async (req, res) => {
       isActive = true,
     } = req.body;
 
-    // ✅ Basic validation
     if (!name || price == null || quantity == null || !category) {
       return res.status(400).json({
         message: "Name, price, quantity and category are required",
@@ -38,14 +37,22 @@ exports.createProduct = async (req, res) => {
       quantity: Number(quantity),
       category,
       isActive,
-      barcode: barcode || generateBarcode(), // ✅ auto-generate
+      barcode: barcode || generateBarcode(),
+    });
+
+    // ✅ STOCK AUDIT — initial stock
+    await StockAudit.create({
+      product: product._id,
+      changedBy: req.user._id,
+      role: req.user.role,
+      beforeQty: 0,
+      afterQty: Number(quantity),
+      reason: "initial stock",
     });
 
     const populatedProduct = await product.populate("category");
-
     res.status(201).json(populatedProduct);
   } catch (error) {
-    // ✅ Handle duplicate barcode nicely
     if (error.code === 11000) {
       return res.status(400).json({
         message: "Duplicate barcode detected. Please try again.",
@@ -75,7 +82,7 @@ exports.getProducts = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(products);
-  } catch (error) {
+  } catch {
     res.status(500).json({
       message: "Failed to load products",
     });
@@ -96,7 +103,7 @@ exports.getProductById = async (req, res) => {
     }
 
     res.json(product);
-  } catch (error) {
+  } catch {
     res.status(500).json({
       message: "Failed to fetch product",
     });
@@ -108,9 +115,18 @@ exports.getProductById = async (req, res) => {
 =============================== */
 exports.updateProduct = async (req, res) => {
   try {
+    const existingProduct = await Product.findById(req.params.id);
+
+    if (!existingProduct) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
+
+    const beforeQty = existingProduct.quantity;
+
     const updateData = { ...req.body };
 
-    // Ensure numbers stay numbers
     if (updateData.price != null) {
       updateData.price = Number(updateData.price);
     }
@@ -119,24 +135,32 @@ exports.updateProduct = async (req, res) => {
       updateData.quantity = Number(updateData.quantity);
     }
 
-    // If barcode is empty, remove it so it won't overwrite
     if (updateData.barcode === "") {
       delete updateData.barcode;
     }
 
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate("category");
+    Object.assign(existingProduct, updateData);
+    await existingProduct.save();
 
-    if (!product) {
-      return res.status(404).json({
-        message: "Product not found",
+    const afterQty = existingProduct.quantity;
+
+    // ✅ STOCK AUDIT — quantity change only
+    if (
+      typeof updateData.quantity === "number" &&
+      beforeQty !== afterQty
+    ) {
+      await StockAudit.create({
+        product: existingProduct._id,
+        changedBy: req.user._id,
+        role: req.user.role,
+        beforeQty,
+        afterQty,
+        reason: "manual update",
       });
     }
 
-    res.json(product);
+    const populatedProduct = await existingProduct.populate("category");
+    res.json(populatedProduct);
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({
@@ -164,7 +188,7 @@ exports.deleteProduct = async (req, res) => {
     }
 
     res.json({ message: "Product removed" });
-  } catch (error) {
+  } catch {
     res.status(500).json({
       message: "Failed to delete product",
     });
