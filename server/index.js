@@ -12,6 +12,8 @@ const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const saleRoutes = require("./routes/saleRoutes");
+const stockAuditRoutes = require("./routes/stockAuditRoutes");
+const shiftRoutes = require("./routes/shiftRoutes"); // ✅ ADD
 
 const app = express();
 
@@ -47,6 +49,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/sales", saleRoutes);
+app.use("/api/stock-audits", stockAuditRoutes);
+app.use("/api/shifts", shiftRoutes); // ✅ ADD
 
 app.get("/", (req, res) => {
   res.send("POS Backend Running");
