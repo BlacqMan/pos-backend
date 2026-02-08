@@ -1,9 +1,9 @@
 const Shift = require("../models/Shift");
 const Sale = require("../models/Sale");
 
-// ===============================
-// START SHIFT
-// ===============================
+/* ===============================
+   START SHIFT
+=============================== */
 exports.startShift = async (req, res) => {
   try {
     const cashierId = req.user.id;
@@ -30,9 +30,9 @@ exports.startShift = async (req, res) => {
   }
 };
 
-// ===============================
-// END SHIFT + CALCULATE REPORT
-// ===============================
+/* ===============================
+   END SHIFT + CALCULATE REPORT
+=============================== */
 exports.endShift = async (req, res) => {
   try {
     const cashierId = req.user.id;
@@ -81,6 +81,33 @@ exports.endShift = async (req, res) => {
 
     res.json({
       message: "Shift closed successfully",
+      shift,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ===============================
+   GET ACTIVE SHIFT (NEW)
+=============================== */
+exports.getActiveShift = async (req, res) => {
+  try {
+    const cashierId = req.user.id;
+
+    const shift = await Shift.findOne({
+      cashier: cashierId,
+      status: "open",
+    });
+
+    if (!shift) {
+      return res.json({
+        active: false,
+      });
+    }
+
+    res.json({
+      active: true,
       shift,
     });
   } catch (err) {
