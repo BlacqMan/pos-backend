@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const saleSchema = new mongoose.Schema(
   {
+    invoiceNumber: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+
     products: [
       {
         product: {
@@ -28,7 +34,7 @@ const saleSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["cash", "card", "mobile"],
+      enum: ["cash", "card", "momo"],
       default: "cash",
     },
 
@@ -37,9 +43,7 @@ const saleSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ===============================
-    // VOIDING (ADMIN ONLY)
-    // ===============================
+    // VOIDING
     isVoided: {
       type: Boolean,
       default: false,

@@ -25,7 +25,7 @@ const shiftSchema = new mongoose.Schema(
     },
 
     // ===============================
-    // SHIFT SUMMARY (CALCULATED ON END)
+    // SALES SUMMARY
     // ===============================
     totalSales: {
       type: Number,
@@ -38,6 +38,60 @@ const shiftSchema = new mongoose.Schema(
     },
 
     voidedSales: {
+      type: Number,
+      default: 0,
+    },
+
+    // ===============================
+    // EXPECTED TOTALS (System)
+    // ===============================
+    expectedCash: {
+      type: Number,
+      default: 0,
+    },
+
+    expectedMoMo: {
+      type: Number,
+      default: 0,
+    },
+
+    expectedCard: {
+      type: Number,
+      default: 0,
+    },
+
+    // ===============================
+    // COUNTED TOTALS (Cashier)
+    // ===============================
+    countedCash: {
+      type: Number,
+      default: 0,
+    },
+
+    countedMoMo: {
+      type: Number,
+      default: 0,
+    },
+
+    countedCard: {
+      type: Number,
+      default: 0,
+    },
+
+    // ===============================
+    // DIFFERENCE
+    // ===============================
+    cashDifference: {
+      type: Number,
+      default: 0,
+    },
+
+    momoDifference: {
+      type: Number,
+      default: 0,
+    },
+
+    cardDifference: {
       type: Number,
       default: 0,
     },
